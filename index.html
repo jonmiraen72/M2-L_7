@@ -20,6 +20,11 @@
   .player-box { position: sticky; top: 0; background: #fff; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; z-index: 10; }
   audio { width: 100%; margin-top: 8px; }
   video { width: 100%; max-height: 360px; background: #000; border-radius: 6px; margin-top: 8px; }
+  .speed-bar { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .speed-label { font-size: 13px; font-weight: bold; color: #555; margin-right: 2px; }
+  .speed-btn { padding: 5px 10px; border: 1px solid #ccc; background: #f8f9fa; color: #333; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .speed-btn:hover { border-color: #0066cc; background: #eef5ff; }
+  .speed-btn.active { background: #0066cc; color: #fff; border-color: #0066cc; }
   .back-btn { background: #555; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-bottom: 10px; }
   .back-btn:hover { background: #333; }
 </style>
@@ -31,6 +36,12 @@
   <div id="nowPlaying" style="font-weight:bold; font-size:14px;">재생할 파일을 선택하세요</div>
   <audio id="audioPlayer" controls style="display:none;"></audio>
   <video id="videoPlayer" controls playsinline style="display:none;"></video>
+  <div class="speed-bar">
+    <span class="speed-label">재생 속도:</span>
+    <button type="button" class="speed-btn active" data-rate="1" onclick="setSpeed(1)">1배속</button>
+    <button type="button" class="speed-btn" data-rate="0.8" onclick="setSpeed(0.8)">0.8배속</button>
+    <button type="button" class="speed-btn" data-rate="0.5" onclick="setSpeed(0.5)">0.5배속</button>
+  </div>
 </div>
 <div id="content">불러오는 중...</div>
 
@@ -41,6 +52,7 @@ const API_BASE = `https://api.github.com/repos/${USER}/${REPO}/contents`;
 
 let currentMedia = []; // { name, type: 'audio' | 'video', download_url }
 let currentIndex = -1;
+let currentRate = 1.0;
 let pathStack = []; // { path: string, label: string }
 
 const playerBox = document.getElementById("playerBox");
@@ -49,6 +61,15 @@ const audio = document.getElementById("audioPlayer");
 const video = document.getElementById("videoPlayer");
 
 document.getElementById("title").innerText = `${REPO} 음원 목록`;
+
+function setSpeed(rate) {
+  currentRate = rate;
+  audio.playbackRate = rate;
+  video.playbackRate = rate;
+  document.querySelectorAll(".speed-btn").forEach(btn => {
+    btn.classList.toggle("active", parseFloat(btn.dataset.rate) === rate);
+  });
+}
 
 function stopAllMedia() {
   audio.pause();
@@ -200,11 +221,17 @@ function playMedia(idx) {
   if (item.type === "video") {
     video.style.display = "block";
     video.src = item.download_url;
-    video.play().catch(() => {});
+    video.playbackRate = currentRate;
+    video.play().then(() => {
+      video.playbackRate = currentRate;
+    }).catch(() => {});
   } else {
     audio.style.display = "block";
     audio.src = item.download_url;
-    audio.play().catch(() => {});
+    audio.playbackRate = currentRate;
+    audio.play().then(() => {
+      audio.playbackRate = currentRate;
+    }).catch(() => {});
   }
 }
 
