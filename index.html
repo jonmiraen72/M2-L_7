@@ -50,21 +50,21 @@ const video = document.getElementById("videoPlayer");
 
 document.getElementById("title").innerText = `${REPO} 음원 목록`;
 
-audio.addEventListener("ended", () => {
-  // 다음 항목이 MP3일 때만 자동 연속 재생
-  let nextIdx = currentIndex + 1;
-  while (nextIdx < currentMedia.length) {
-    if (currentMedia[nextIdx].type === "audio") {
-      playMedia(nextIdx);
-      return;
-    }
-    nextIdx++;
-  }
-});
-
 function stopAllMedia() {
   audio.pause();
+  audio.currentTime = 0;
+  audio.removeAttribute("src");
+  audio.load();
+
   video.pause();
+  video.currentTime = 0;
+  video.removeAttribute("src");
+  video.load();
+
+  audio.style.display = "none";
+  video.style.display = "none";
+  currentIndex = -1;
+  nowPlaying.innerText = "재생할 파일을 선택하세요";
 }
 
 function escapeHtml(str) {
@@ -93,6 +93,8 @@ function getMediaType(fileName) {
 }
 
 async function openPath(repoPath = "", label = `${REPO} Unit 선택`, pushHistory = true) {
+  stopAllMedia();
+
   const cleanPath = repoPath.replace(/^\/+|\/+$/g, "");
   if (pushHistory) {
     pathStack.push({ path: cleanPath, label });
@@ -174,6 +176,7 @@ async function openPath(repoPath = "", label = `${REPO} Unit 선택`, pushHistor
 }
 
 function goBack() {
+  stopAllMedia();
   if (pathStack.length > 1) {
     pathStack.pop();
     const prev = pathStack[pathStack.length - 1];
@@ -182,24 +185,23 @@ function goBack() {
 }
 
 function playMedia(idx) {
-  currentIndex = idx;
-  document.querySelectorAll(".track-item").forEach(el => el.classList.remove("active"));
-  const activeEl = document.getElementById(`track-${idx}`);
-  if (activeEl) activeEl.classList.add("active");
-
   const item = currentMedia[idx];
   if (!item) return;
 
   stopAllMedia();
+  currentIndex = idx;
+
+  document.querySelectorAll(".track-item").forEach(el => el.classList.remove("active"));
+  const activeEl = document.getElementById(`track-${idx}`);
+  if (activeEl) activeEl.classList.add("active");
+
   nowPlaying.innerText = `재생 중: ${item.name}`;
 
   if (item.type === "video") {
-    audio.style.display = "none";
     video.style.display = "block";
     video.src = item.download_url;
     video.play().catch(() => {});
   } else {
-    video.style.display = "none";
     audio.style.display = "block";
     audio.src = item.download_url;
     audio.play().catch(() => {});
